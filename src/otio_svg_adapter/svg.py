@@ -1044,15 +1044,19 @@ def _draw_clip(clip, svg_writer, extra_data=()):
         source_range_text = r'source_range: {}, {}'.format(
             repr(float(round(clip.source_range.start_time.value, 1))),
             repr(float(round(clip.source_range.duration.value, 1))))
-    trimmed_range_location = Point(clip_origin.x + svg_writer.font_size,
-                                   clip_origin.y + svg_writer.clip_rect_height +
-                                   svg_writer.text_margin)
+    trimmed_range_location = Point(
+        clip_origin.x + svg_writer.font_size,
+        clip_origin.y + svg_writer.clip_rect_height +
+        svg_writer.text_margin
+    )
     source_range_location = Point(clip_origin.x + svg_writer.font_size,
                                   clip_origin.y - svg_writer.font_size)
     svg_writer.draw_text(trimmed_range_text, trimmed_range_location,
                          svg_writer.font_size,
                          )
-    svg_writer.draw_text(source_range_text, source_range_location, svg_writer.font_size)
+    svg_writer.draw_text(
+        source_range_text, source_range_location, svg_writer.font_size
+    )
 
     # Draw media reference
     trim_media_origin = Point(
@@ -1078,12 +1082,15 @@ def _draw_clip(clip, svg_writer, extra_data=()):
         label_size=media_text_size)
     for i in range(int(clip_data.avlbl_start),
                    int(clip_data.avlbl_end) + 1):
-        start_pt = Point(svg_writer.x_origin + (i * svg_writer.scale_x), media_origin.y)
+        start_pt = Point(
+            svg_writer.x_origin + (i * svg_writer.scale_x), media_origin.y
+        )
         if start_pt.x < media_origin.x:
             continue
         end_pt = Point(start_pt.x, start_pt.y + time_marker_height)
-        svg_writer.draw_line(start_point=start_pt, end_point=end_pt, stroke_width=1.0,
-                             stroke_color=COLORS['black'])
+        svg_writer.draw_line(start_point=start_pt, end_point=end_pt,
+                             stroke_width=1.0, stroke_color=COLORS['black']
+                             )
     # Draw media_reference info
     if clip.available_range() is None:
         available_range_text = r'available_range: {}'.format('None')
@@ -1101,9 +1108,13 @@ def _draw_clip(clip, svg_writer, extra_data=()):
             target_url_text = r'target_url: {}'.format('Media Unavailable')
         else:
             target_url_text = fr'target_url: {clip.media_reference.target_url}'
-        target_url_location = Point(media_origin.x + svg_writer.font_size,
-                                    media_origin.y - 2.0 * svg_writer.font_size)
-        svg_writer.draw_text(target_url_text, target_url_location, svg_writer.font_size)
+        target_url_location = Point(
+            media_origin.x + svg_writer.font_size,
+            media_origin.y - 2.0 * svg_writer.font_size
+        )
+        svg_writer.draw_text(
+            target_url_text, target_url_location, svg_writer.font_size
+        )
     # Draw arrow from clip to media reference
     clip_media_height_difference = (((clip_count - 1) * 2.0 + 1) *
                                     svg_writer.clip_rect_height)
@@ -1113,34 +1124,50 @@ def _draw_clip(clip, svg_writer, extra_data=()):
     media_arrow_end = Point(
         clip_origin.x + (clip_data.trim_duration * svg_writer.scale_x) * 0.5,
         clip_origin.y - clip_media_height_difference + svg_writer.arrow_margin)
-    svg_writer.draw_arrow(start_point=media_arrow_start, end_point=media_arrow_end,
-                          stroke_width=2.0, stroke_color=COLORS['black'])
+    svg_writer.draw_arrow(
+        start_point=media_arrow_start, end_point=media_arrow_end,
+        stroke_width=2.0, stroke_color=COLORS['black']
+    )
     arrow_label_text = r'media_reference'
-    arrow_label_location = Point(media_arrow_start.x + svg_writer.arrow_label_margin,
-                                 media_arrow_start.y -
-                                 svg_writer.clip_rect_height * 0.5)
-    svg_writer.draw_text(arrow_label_text, arrow_label_location, svg_writer.font_size)
+    arrow_label_location = Point(
+        media_arrow_start.x + svg_writer.arrow_label_margin,
+        media_arrow_start.y -
+        svg_writer.clip_rect_height * 0.5
+    )
+    svg_writer.draw_text(
+        arrow_label_text, arrow_label_location, svg_writer.font_size
+    )
     # Draw media transition sections
     if clip_data.transition_end is not None:
         cut_x = clip_origin.x + clip_rect.width
         section_start_pt = Point(cut_x, media_origin.y)
         # Handle the case of transition ending at cut
         if clip_data.transition_end.out_offset.value == 0.0:
-            media_transition_rect = Rect(section_start_pt,
-                                         -clip_data.transition_end.in_offset.value *
-                                         svg_writer.scale_x,
-                                         svg_writer.clip_rect_height)
-            marker_x = [clip_data.src_end,
-                        clip_data.src_end - clip_data.transition_end.in_offset.value]
+            media_transition_rect = Rect(
+                section_start_pt,
+                -clip_data.transition_end.in_offset.value *
+                svg_writer.scale_x,
+                svg_writer.clip_rect_height
+            )
+            marker_x = [
+                clip_data.src_end,
+                clip_data.src_end - clip_data.transition_end.in_offset.value
+            ]
         else:
-            media_transition_rect = Rect(section_start_pt,
-                                         clip_data.transition_end.out_offset.value *
-                                         svg_writer.scale_x,
-                                         svg_writer.clip_rect_height)
-            marker_x = [clip_data.src_end,
-                        clip_data.src_end + clip_data.transition_end.out_offset.value]
+            media_transition_rect = Rect(
+                section_start_pt,
+                clip_data.transition_end.out_offset.value *
+                svg_writer.scale_x,
+                svg_writer.clip_rect_height
+            )
+            marker_x = [
+                clip_data.src_end,
+                clip_data.src_end + clip_data.transition_end.out_offset.value
+            ]
         section_color = Color(clip_color[0], clip_color[1], clip_color[2], 0.5)
-        svg_writer.draw_dashed_rect(media_transition_rect, fill_color=section_color)
+        svg_writer.draw_dashed_rect(
+            media_transition_rect, fill_color=section_color
+        )
         marker_x.sort()
         # Draw markers for transition sections
         for i in range(int(marker_x[0]),
@@ -1158,23 +1185,29 @@ def _draw_clip(clip, svg_writer, extra_data=()):
         section_start_pt = Point(cut_x, media_origin.y)
         # Handle the case of transition starting at cut
         if clip_data.transition_begin.in_offset.value == 0.0:
-            media_transition_rect = Rect(section_start_pt,
-                                         clip_data.transition_begin.out_offset.value *
-                                         svg_writer.scale_x,
-                                         svg_writer.clip_rect_height)
+            media_transition_rect = Rect(
+                section_start_pt,
+                clip_data.transition_begin.out_offset.value *
+                svg_writer.scale_x,
+                svg_writer.clip_rect_height
+            )
             marker_x = [clip_data.src_start,
                         clip_data.src_start +
                         clip_data.transition_begin.out_offset.value]
         else:
-            media_transition_rect = Rect(section_start_pt,
-                                         -clip_data.transition_begin.in_offset.value *
-                                         svg_writer.scale_x,
-                                         svg_writer.clip_rect_height)
+            media_transition_rect = Rect(
+                section_start_pt,
+                -clip_data.transition_begin.in_offset.value *
+                svg_writer.scale_x,
+                svg_writer.clip_rect_height
+            )
             marker_x = [clip_data.src_start,
                         clip_data.src_start -
                         clip_data.transition_begin.out_offset.value]
         section_color = Color(clip_color[0], clip_color[1], clip_color[2], 0.5)
-        svg_writer.draw_dashed_rect(media_transition_rect, fill_color=section_color)
+        svg_writer.draw_dashed_rect(
+            media_transition_rect, fill_color=section_color
+        )
         marker_x.sort()
         # Draw markers for transition sections
         for i in range(int(marker_x[0]),
@@ -1183,7 +1216,9 @@ def _draw_clip(clip, svg_writer, extra_data=()):
                              media_origin.y)
             if start_pt.x < media_transition_rect.min_x():
                 continue
-            end_pt = Point(start_pt.x, start_pt.y + 0.15 * svg_writer.clip_rect_height)
+            end_pt = Point(
+                start_pt.x, start_pt.y + 0.15 * svg_writer.clip_rect_height
+            )
             svg_writer.draw_line(start_point=start_pt, end_point=end_pt,
                                  stroke_width=1.0,
                                  stroke_color=COLORS['black'])
@@ -1191,9 +1226,11 @@ def _draw_clip(clip, svg_writer, extra_data=()):
 
 def _draw_gap(gap, svg_writer, extra_data=()):
     gap_data = extra_data[0]
-    gap_origin = Point(svg_writer.x_origin + (gap_data.src_start * svg_writer.scale_x),
-                       svg_writer.image_height - svg_writer.image_margin -
-                       svg_writer.vertical_drawing_index * svg_writer.clip_rect_height)
+    gap_origin = Point(
+        svg_writer.x_origin + (gap_data.src_start * svg_writer.scale_x),
+        svg_writer.image_height - svg_writer.image_margin -
+        svg_writer.vertical_drawing_index * svg_writer.clip_rect_height
+    )
     gap_text_size = 0.4 * svg_writer.clip_rect_height
     gap_text = 'Gap'
     svg_writer.draw_labeled_dashed_rect_with_border(
@@ -1202,10 +1239,14 @@ def _draw_gap(gap, svg_writer, extra_data=()):
         label=gap_text, label_size=gap_text_size)
     time_marker_height = 0.15 * svg_writer.clip_rect_height
     for i in range(int(gap_data.src_start), int(gap_data.src_end) + 1):
-        start_pt = Point(svg_writer.x_origin + (i * svg_writer.scale_x), gap_origin.y)
+        start_pt = Point(
+            svg_writer.x_origin + (i * svg_writer.scale_x), gap_origin.y
+        )
         end_pt = Point(start_pt.x, start_pt.y + time_marker_height)
-        svg_writer.draw_line(start_point=start_pt, end_point=end_pt, stroke_width=1.0,
-                             stroke_color=COLORS['black'])
+        svg_writer.draw_line(
+            start_point=start_pt, end_point=end_pt, stroke_width=1.0,
+            stroke_color=COLORS['black']
+        )
     # Draw range info
     if gap.trimmed_range() is None:
         trimmed_range_text = r'trimmed_range() -> {}'.format('None')
@@ -1227,19 +1268,25 @@ def _draw_gap(gap, svg_writer, extra_data=()):
     svg_writer.draw_text(trimmed_range_text, trimmed_range_location,
                          svg_writer.font_size,
                          )
-    svg_writer.draw_text(source_range_text, source_range_location, svg_writer.font_size)
+    svg_writer.draw_text(
+        source_range_text, source_range_location, svg_writer.font_size
+    )
 
 
 def _draw_transition(transition, svg_writer, extra_data=()):
     cut_x = extra_data[0]
-    transition_origin = Point(cut_x - (transition.in_offset.value * svg_writer.scale_x),
-                              svg_writer.image_height - svg_writer.image_margin -
-                              (svg_writer.vertical_drawing_index - 2) *
-                              svg_writer.clip_rect_height)
-    transition_rect = Rect(transition_origin,
-                           (transition.in_offset.value + transition.out_offset.value) *
-                           svg_writer.scale_x,
-                           svg_writer.clip_rect_height)
+    transition_origin = Point(
+        cut_x - (transition.in_offset.value * svg_writer.scale_x),
+        svg_writer.image_height - svg_writer.image_margin -
+        (svg_writer.vertical_drawing_index - 2) *
+        svg_writer.clip_rect_height
+    )
+    transition_rect = Rect(
+        transition_origin,
+        (transition.in_offset.value + transition.out_offset.value) *
+        svg_writer.scale_x,
+        svg_writer.clip_rect_height
+    )
     transition_name = 'Transition' if len(
         transition.name) == 0 else transition.name
     transition_name_size = 0.4 * svg_writer.clip_rect_height
@@ -1251,14 +1298,24 @@ def _draw_transition(transition, svg_writer, extra_data=()):
                          stroke_color=COLORS['black'])
     in_offset_location = Point(transition_origin.x + svg_writer.font_size,
                                transition_origin.y - svg_writer.font_size)
-    out_offset_location = Point(transition_origin.x + svg_writer.font_size,
-                                transition_origin.y - 2.0 * svg_writer.font_size)
+    out_offset_location = Point(
+        transition_origin.x + svg_writer.font_size,
+        transition_origin.y - 2.0 * svg_writer.font_size
+    )
     in_offset_text = r'in_offset: ' \
-                     r'{}'.format(repr(float(round(transition.in_offset.value, 1))))
+                     r'{}'.format(
+                         repr(float(round(transition.in_offset.value, 1)))
+                     )
     out_offset_text = r'out_offset: ' \
-                      r'{}'.format(repr(float(round(transition.out_offset.value, 1))))
-    svg_writer.draw_text(in_offset_text, in_offset_location, svg_writer.font_size)
-    svg_writer.draw_text(out_offset_text, out_offset_location, svg_writer.font_size)
+                      r'{}'.format(
+                          repr(float(round(transition.out_offset.value, 1)))
+                      )
+    svg_writer.draw_text(
+        in_offset_text, in_offset_location, svg_writer.font_size
+    )
+    svg_writer.draw_text(
+        out_offset_text, out_offset_location, svg_writer.font_size
+    )
     cut_location = Point(cut_x, transition_origin.y)
     cut_line_end = Point(cut_x,
                          svg_writer.image_height - svg_writer.image_margin -
@@ -1275,9 +1332,11 @@ def _draw_collection(collection, svg_writer, extra_data=()):
 def convert_otio_to_svg(timeline, width, height):
     global random_colors_used
 
-    svg_writer = SVGWriter(image_width=width, image_height=height,
-                           font_family='sans-serif', image_margin=20.0, font_size=15.0,
-                           arrow_label_margin=5.0)
+    svg_writer = SVGWriter(
+        image_width=width, image_height=height,
+        font_family='sans-serif', image_margin=20.0, font_size=15.0,
+        arrow_label_margin=5.0
+    )
     random_colors_used = []
     random.seed(100)
     draw_item(timeline, svg_writer, ())

@@ -51,7 +51,9 @@ class SVGAdapterTest(unittest.TestCase):
     def test_multiple_tracks(self):
         self.maxDiff = None
         tmp_path = tempfile.mkstemp(suffix=".svg", text=True)[1]
-        timeline = otio.core.deserialize_json_from_file(MULTIPLE_TRACK_OTIO_PATH)
+        timeline = otio.core.deserialize_json_from_file(
+            MULTIPLE_TRACK_OTIO_PATH
+        )
         otio.adapters.write_to_file(input_otio=timeline, filepath=tmp_path)
 
         test_tree = ET.parse(MULTIPLE_TRACK_SVG_PATH)
