@@ -6,7 +6,7 @@ Points in calculations are y-up. Points in SVG are y-down.
 
 # Adapter Feature Matrix
 
-The following features of OTIO are supported by the `fcp_xml` adapter:
+The following features of OTIO are supported by the `svg` adapter:
 
 |Feature                  | Support |
 |-------------------------|:-------:|
