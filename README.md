@@ -15,7 +15,7 @@ The following features of OTIO are supported by the `svg` adapter:
 |Audio Tracks & Clips     |    ✔    |
 |Gap/Filler               |    ✔    |
 |Markers                  |    ✔    |
-|Nesting                  |    ✔    |
+|Nesting                  |    ✖    |
 |Transitions              |    ✔    |
 |Audio/Video Effects      |   N/A   |
 |Linear Speed Effects     |   N/A   |
