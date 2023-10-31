@@ -13,6 +13,8 @@ import opentimelineio as otio
 SAMPLE_DATA_DIR = os.path.join(os.path.dirname(__file__), "sample_data")
 SIMPLE_CUT_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut.otio')
 SIMPLE_CUT_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut.svg')
+SIMPLE_CUT_NO_AVAILABLE_RANGE_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut_no_available_range.otio')
+SIMPLE_CUT_NO_AVAILABLE_RANGE_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut_no_available_range.svg')
 MULTIPLE_TRACK_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'multiple_track.otio')
 MULTIPLE_TRACK_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, 'multiple_track.svg')
 TRANSITION_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'transition.otio')
@@ -35,6 +37,20 @@ def _svg_equal(e1, e2):
 
 class SVGAdapterTest(unittest.TestCase):
     def test_simple_cut(self):
+        self.maxDiff = None
+        tmp_path = tempfile.mkstemp(suffix=".svg", text=True)[1]
+        timeline = otio.core.deserialize_json_from_file(SIMPLE_CUT_OTIO_PATH)
+        otio.adapters.write_to_file(input_otio=timeline, filepath=tmp_path)
+
+        test_tree = ET.parse(SIMPLE_CUT_SVG_PATH)
+        test_root = test_tree.getroot()
+
+        reference_tree = ET.parse(tmp_path)
+        reference_root = reference_tree.getroot()
+
+        self.assertTrue(_svg_equal(test_root, reference_root))
+
+    def test_simple_cut_no_available_range(self):
         self.maxDiff = None
         tmp_path = tempfile.mkstemp(suffix=".svg", text=True)[1]
         timeline = otio.core.deserialize_json_from_file(SIMPLE_CUT_OTIO_PATH)
