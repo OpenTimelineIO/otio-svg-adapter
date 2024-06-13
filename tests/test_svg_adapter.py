@@ -10,6 +10,10 @@ import xml.etree.ElementTree as ET
 
 import opentimelineio as otio
 
+os.environ['OTIO_PLUGIN_MANIFEST_PATH'] = os.pathsep.join(
+    ["$OTIO_PLUGIN_MANIFEST_PATH", "../src/otio_svg_adapter/plugin_manifest.json"]
+)
+
 SAMPLE_DATA_DIR = os.path.join(os.path.dirname(__file__), "sample_data")
 SIMPLE_CUT_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut.otio')
 SIMPLE_CUT_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut.svg')
