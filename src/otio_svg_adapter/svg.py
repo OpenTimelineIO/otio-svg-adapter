@@ -81,7 +81,7 @@ COLORS = {
     'transparent': Color(0, 0, 0, 0),
     'black': Color(0.0, 0.0, 0.0, 1.0),
     'white': Color(1.0, 1.0, 1.0, 1.0),
-    'transluscent_white': Color(1.0, 1.0, 1.0, 0.7),
+    'translucent_white': Color(1.0, 1.0, 1.0, 0.7),
     'purple': Color(0.5, 0.0, 0.5, 1.0),
     'light_blue': Color(0.529, 0.808, 0.922, 1.0),
     'blue': Color(0.0, 0.0, 1.0, 1.0),
@@ -97,8 +97,12 @@ COLORS = {
     'pink': Color(1.0, 0.75, 0.79, 1.0),
     'gray': Color(0.5, 0.5, 0.5, 1.0),
     'dark_gray': Color(0.66, 0.66, 0.66, 1.0),
-    'dark_gray_transluscent': Color(0.66, 0.66, 0.66, 0.7843)
+    'dark_gray_translucent': Color(0.66, 0.66, 0.66, 0.7843)
 }
+
+
+NONE_TEXT = 'None'
+MEDIA_UNAVAILABLE_TEXT = 'Media Unavailable'
 
 
 class Point:
@@ -586,7 +590,7 @@ class ClipData:
 
     def __init__(self, src_start=0.0, src_end=0.0, avlbl_start=0.0,
                  avlbl_end=0.0, avlbl_duration=0.0,
-                 trim_start=0.0, trim_duration=0.0, clip_id=0,
+                 trim_start=0.0, trim_duration=0.0, target_url='', clip_id=0,
                  transition_begin=None, transition_end=None):
         self.src_start = src_start
         self.src_end = src_end
@@ -595,6 +599,7 @@ class ClipData:
         self.avlbl_duration = avlbl_duration
         self.trim_start = trim_start
         self.trim_duration = trim_duration
+        self.target_url = target_url
         self.clip_id = clip_id
         self.transition_begin = transition_begin
         self.transition_end = transition_end
@@ -633,11 +638,12 @@ def _draw_timeline(timeline, svg_writer, extra_data=()):
                 current_transition = item
                 current_track_clips_data[-1].transition_end = item
                 continue
-            avlbl_start = (
-                track_duration - item.trimmed_range().start_time.value
-            )
+            if isinstance(item, otio.schema.Clip) and not item.media_reference.available_range:
+                item.media_reference.available_range = item.source_range
+            avlbl_start = track_duration - item.trimmed_range().start_time.value
+            available_range = _available_range_from_clip(item)
             if isinstance(item, otio.schema.Clip):
-                avlbl_start += item.available_range().start_time.value
+                avlbl_start += available_range.start_time.value
             min_time = min(min_time, avlbl_start)
             src_start = track_duration
             track_duration += item.trimmed_range().duration.value
@@ -645,20 +651,28 @@ def _draw_timeline(timeline, svg_writer, extra_data=()):
             avlbl_end = 0.0
             trim_start = item.trimmed_range().start_time.value
             trim_duration = item.trimmed_range().duration.value
+
             if isinstance(item, otio.schema.Clip):
+                avlbl_duration = item.available_range().duration.value
                 avlbl_end = (
                     item.available_range().start_time.value
-                    + item.available_range().duration.value
-                    - item.trimmed_range().start_time.value
-                    - item.trimmed_range().duration.value
+                    + avlbl_duration
+                    - trim_start
+                    - trim_duration
                     + track_duration - 1
                 )
                 clip_count += 1
-                avlbl_duration = item.available_range().duration.value
+
+                target_url = ''
+                if (
+                        hasattr(item.media_reference, 'target_url')
+                        and item.media_reference.target_url
+                ):
+                    target_url = item.media_reference.target_url
                 clip_data = ClipData(src_start, src_end, avlbl_start,
                                      avlbl_end, avlbl_duration, trim_start,
                                      trim_duration,
-                                     clip_count - 1)
+                                     target_url, clip_count - 1)
                 if current_transition is not None:
                     clip_data.transition_begin = current_transition
                     current_transition = None
@@ -766,15 +780,10 @@ def _draw_timeline(timeline, svg_writer, extra_data=()):
                                  (arrow_start.y + arrow_end.y) * 0.5)
     svg_writer.draw_text('tracks', arrow_label_location, svg_writer.font_size)
     # Draw global_start_time info
-    if timeline.global_start_time is None:
-        start_time_text = r'global_start_time: {}'.format('None')
-    else:
-        start_time_text = r'global_start_time: {}'.format(
-            repr(float(round(timeline.global_start_time.value, 1))))
     start_time_location = Point(timeline_origin.x + svg_writer.font_size,
                                 timeline_origin.y - svg_writer.font_size)
     svg_writer.draw_text(
-        start_time_text,
+        _global_start_time_to_text(timeline),
         start_time_location,
         svg_writer.font_size
     )
@@ -797,7 +806,7 @@ def _draw_stack(stack, svg_writer, extra_data=()):
     svg_writer.draw_labeled_solid_rect_with_border(
         Rect(stack_origin, stack_duration * svg_writer.scale_x,
              svg_writer.clip_rect_height),
-        label="Stack", fill_color=COLORS['dark_gray_transluscent'],
+        label="Stack", fill_color=COLORS['dark_gray_translucent'],
         label_size=stack_text_size)
     time_marker_height = 0.15 * svg_writer.clip_rect_height
     for i in range(1, int(svg_writer.max_total_duration)):
@@ -875,18 +884,8 @@ def _draw_stack(stack, svg_writer, extra_data=()):
         svg_writer.font_size
     )
     # Draw range info
-    if stack.trimmed_range() is None:
-        trimmed_range_text = r'trimmed_range() -> {}'.format('None')
-    else:
-        trimmed_range_text = r'trimmed_range() -> {}, {}'.format(
-            repr(float(round(stack.trimmed_range().start_time.value, 1))),
-            repr(float(round(stack.trimmed_range().duration.value, 1))))
-    if stack.source_range is None:
-        source_range_text = r'source_range: {}'.format('None')
-    else:
-        source_range_text = r'source_range: {}, {}'.format(
-            repr(float(round(stack.source_range.start_time.value, 1))),
-            repr(float(round(stack.source_range.duration.value, 1))))
+    trimmed_range_text = _trimmed_range_to_text(stack)
+    source_range_text = _source_range_to_text(stack)
     trimmed_range_location = Point(
         stack_origin.x + svg_writer.font_size,
         stack_origin.y + svg_writer.clip_rect_height + svg_writer.text_margin
@@ -918,7 +917,7 @@ def _draw_track(track, svg_writer, extra_data=()):
     svg_writer.draw_labeled_solid_rect_with_border(
         Rect(track_origin, track_duration * svg_writer.scale_x,
              svg_writer.clip_rect_height),
-        label=track_text, fill_color=COLORS['dark_gray_transluscent'],
+        label=track_text, fill_color=COLORS['dark_gray_translucent'],
         label_size=track_text_size)
     time_marker_height = 0.15 * svg_writer.clip_rect_height
     for i in range(1, int(track_duration)):
@@ -974,18 +973,8 @@ def _draw_track(track, svg_writer, extra_data=()):
         svg_writer.font_size
     )
     # Draw range info
-    if track.trimmed_range() is None:
-        trimmed_range_text = r'trimmed_range() -> {}'.format('None')
-    else:
-        trimmed_range_text = r'trimmed_range() -> {}, {}'.format(
-            repr(float(round(track.trimmed_range().start_time.value, 1))),
-            repr(float(round(track.trimmed_range().duration.value, 1))))
-    if track.source_range is None:
-        source_range_text = r'source_range: {}'.format('None')
-    else:
-        source_range_text = r'source_range: {}, {}'.format(
-            repr(float(round(track.source_range.start_time.value, 1))),
-            repr(float(round(track.source_range.duration.value, 1))))
+    trimmed_range_text = _trimmed_range_to_text(track)
+    source_range_text = _source_range_to_text(track)
     trimmed_range_location = Point(
         track_origin.x + svg_writer.font_size,
         track_origin.y + svg_writer.clip_rect_height + svg_writer.text_margin
@@ -1032,18 +1021,8 @@ def _draw_clip(clip, svg_writer, extra_data=()):
             stroke_color=COLORS['black']
         )
     # Draw range info
-    if clip.trimmed_range() is None:
-        trimmed_range_text = r'trimmed_range() -> {}'.format('None')
-    else:
-        trimmed_range_text = r'trimmed_range() -> {}, {}'.format(
-            repr(float(round(clip.trimmed_range().start_time.value, 1))),
-            repr(float(round(clip.trimmed_range().duration.value, 1))))
-    if clip.source_range is None:
-        source_range_text = r'source_range: {}'.format('None')
-    else:
-        source_range_text = r'source_range: {}, {}'.format(
-            repr(float(round(clip.source_range.start_time.value, 1))),
-            repr(float(round(clip.source_range.duration.value, 1))))
+    trimmed_range_text = _trimmed_range_to_text(clip)
+    source_range_text = _source_range_to_text(clip)
     trimmed_range_location = Point(
         clip_origin.x + svg_writer.font_size,
         clip_origin.y + svg_writer.clip_rect_height +
@@ -1092,22 +1071,14 @@ def _draw_clip(clip, svg_writer, extra_data=()):
                              stroke_width=1.0, stroke_color=COLORS['black']
                              )
     # Draw media_reference info
-    if clip.available_range() is None:
-        available_range_text = r'available_range: {}'.format('None')
-    else:
-        available_range_text = r'available_range: {}, {}'.format(
-            repr(float(round(clip.available_range().start_time.value, 1))),
-            repr(float(round(clip.available_range().duration.value, 1))))
+    available_range_text = _available_range_to_text(clip)
     available_range_location = Point(media_origin.x + svg_writer.font_size,
                                      media_origin.y - svg_writer.font_size)
     svg_writer.draw_text(available_range_text, available_range_location,
                          svg_writer.font_size,
                          )
-    if hasattr(clip.media_reference, 'target_url'):
-        if clip.media_reference.target_url is None:
-            target_url_text = r'target_url: {}'.format('Media Unavailable')
-        else:
-            target_url_text = fr'target_url: {clip.media_reference.target_url}'
+    if clip.media_reference.target_url is None:
+        target_url_text = _target_url_to_text(clip)
         target_url_location = Point(
             media_origin.x + svg_writer.font_size,
             media_origin.y - 2.0 * svg_writer.font_size
@@ -1248,18 +1219,9 @@ def _draw_gap(gap, svg_writer, extra_data=()):
             stroke_color=COLORS['black']
         )
     # Draw range info
-    if gap.trimmed_range() is None:
-        trimmed_range_text = r'trimmed_range() -> {}'.format('None')
-    else:
-        trimmed_range_text = r'trimmed_range() -> {}, {}'.format(
-            repr(float(round(gap.trimmed_range().start_time.value, 1))),
-            repr(float(round(gap.trimmed_range().duration.value, 1))))
-    if gap.source_range is None:
-        source_range_text = r'source_range: {}'.format('None')
-    else:
-        source_range_text = r'source_range: {}, {}'.format(
-            repr(float(round(gap.source_range.start_time.value, 1))),
-            repr(float(round(gap.source_range.duration.value, 1))))
+    trimmed_range_text = _trimmed_range_to_text(gap)
+    source_range_text = _source_range_to_text(gap)
+
     trimmed_range_location = Point(gap_origin.x + svg_writer.font_size,
                                    gap_origin.y + svg_writer.clip_rect_height +
                                    svg_writer.text_margin)
@@ -1302,14 +1264,8 @@ def _draw_transition(transition, svg_writer, extra_data=()):
         transition_origin.x + svg_writer.font_size,
         transition_origin.y - 2.0 * svg_writer.font_size
     )
-    in_offset_text = r'in_offset: ' \
-                     r'{}'.format(
-                         repr(float(round(transition.in_offset.value, 1)))
-                     )
-    out_offset_text = r'out_offset: ' \
-                      r'{}'.format(
-                          repr(float(round(transition.out_offset.value, 1)))
-                      )
+    in_offset_text = f'in_offset: {_float_to_repr(transition.in_offset.value)}'
+    out_offset_text = f'out_offset: {_float_to_repr(transition.out_offset.value)}'
     svg_writer.draw_text(
         in_offset_text, in_offset_location, svg_writer.font_size
     )
@@ -1327,6 +1283,70 @@ def _draw_transition(transition, svg_writer, extra_data=()):
 
 def _draw_collection(collection, svg_writer, extra_data=()):
     pass
+
+
+def _time_range_to_repr(time_range: otio.opentime.TimeRange) -> str:
+    """ Converts a TimeRange's value to a repr for formatting in strings """
+
+    if time_range is None:
+        return NONE_TEXT
+
+    start_time = _float_to_repr(time_range.start_time.value)
+    duration = _float_to_repr(time_range.duration.value)
+    text = f'{start_time}, {duration}'
+    return text
+
+
+def _float_to_repr(value: float) -> str:
+    """ Convert float to its repr for formatting in strings """
+    value_text = repr(float(round(value, 1)))
+    return value_text
+
+
+def _source_range_to_text(item: otio.core.Item) -> str:
+    source_range_text = f'source_range: {_time_range_to_repr(item.source_range)}'
+    return source_range_text
+
+
+def _trimmed_range_to_text(item: otio.core.Item) -> str:
+    trimmed_range_text = f'trimmed_range() -> {_time_range_to_repr(item.trimmed_range())}'
+    return trimmed_range_text
+
+
+def _global_start_time_to_text(timeline: otio.schema.Timeline) -> str:
+    global_start_time = timeline.global_start_time
+    if global_start_time:
+        text = _float_to_repr(global_start_time.value)
+    else:
+        text = NONE_TEXT
+    start_time_text = f'global_start_time: {text}'
+    return start_time_text
+
+
+def _target_url_to_text(clip: otio.schema.Clip) -> str:
+    if hasattr(clip.media_reference, 'target_url') and clip.media_reference.target_url:
+        target_url = clip.media_reference.target_url
+    else:
+        target_url = MEDIA_UNAVAILABLE_TEXT
+    target_url_text = f'target_url: {target_url}'
+    return target_url_text
+
+
+def _available_range_to_text(clip: otio.schema.Clip) -> str:
+    available_range = _available_range_from_clip(clip)
+    available_range_text = f'available_range: {_time_range_to_repr(available_range)}'
+    return available_range_text
+
+
+def _available_range_from_clip(clip: otio.schema.Clip) -> otio.opentime.TimeRange:
+    """
+    Default to a Clip's source range but
+    if the media reference has a defined available_range use that it instead
+    """
+    available_range = clip.source_range
+    if isinstance(clip, otio.schema.Clip) and clip.media_reference.available_range:
+        available_range = clip.available_range()
+    return available_range
 
 
 def convert_otio_to_svg(timeline, width, height):
