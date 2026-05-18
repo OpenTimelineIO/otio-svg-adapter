@@ -48,3 +48,6 @@ otio_svg_adapter = "otio_svg_adapter"
 # Ensure the sdist includes a setup.py for older pip versions
 support-legacy = true
 exclude = [".github"]
+
+[tool.ruff]
+line-length = 79

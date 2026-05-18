@@ -84,7 +84,7 @@ class ImageSequenceReferenceHandler(MediaReferenceInfoHandler):
     standard linux `{START..END[..INCREMENT]}` formatting.
 
     The final result also takes into account the total zero padding
-    for the frame number, and the suffix of the media reference type. 
+    for the frame number, and the suffix of the media reference type.
 
     Example:
         ```
