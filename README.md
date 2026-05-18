@@ -24,7 +24,7 @@ The following features of OTIO are supported by the `svg` adapter:
 |Linear Speed Effects     |   N/A   |
 |Fancy Speed Effects      |   N/A   |
 |Color Decision List      |   N/A   |
-|Image Sequence Reference |    ✖    |
+|Image Sequence Reference |    ✔    |
 
 # Adapter specific arguments
 The svg adapter adds a couple of optional arguments to the `write_to_string()` function to set the 

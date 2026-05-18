@@ -4,19 +4,25 @@
 """Unit tests for the OTIO to SVG adapter"""
 
 import os
-import unittest
 import tempfile
+import unittest
 import xml.etree.ElementTree as ET
 
 import opentimelineio as otio
 
 SAMPLE_DATA_DIR = os.path.join(os.path.dirname(__file__), "sample_data")
-SIMPLE_CUT_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut.otio')
-SIMPLE_CUT_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, 'simple_cut.svg')
-MULTIPLE_TRACK_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'multiple_track.otio')
-MULTIPLE_TRACK_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, 'multiple_track.svg')
-TRANSITION_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, 'transition.otio')
-TRANSITION_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, 'transition.svg')
+SIMPLE_CUT_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, "simple_cut.otio")
+SIMPLE_CUT_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, "simple_cut.svg")
+MULTIPLE_TRACK_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, "multiple_track.otio")
+MULTIPLE_TRACK_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, "multiple_track.svg")
+TRANSITION_OTIO_PATH = os.path.join(SAMPLE_DATA_DIR, "transition.otio")
+TRANSITION_SVG_PATH = os.path.join(SAMPLE_DATA_DIR, "transition.svg")
+MEDIA_REF_HANDLING_OTIO_PATH = os.path.join(
+    SAMPLE_DATA_DIR, "media_ref_handling.otio"
+)
+MEDIA_REF_HANDLING_SVG_PATH = os.path.join(
+    SAMPLE_DATA_DIR, "media_ref_handling.svg"
+)
 
 
 def _svg_equal(e1, e2):
@@ -71,6 +77,22 @@ class SVGAdapterTest(unittest.TestCase):
         otio.adapters.write_to_file(input_otio=timeline, filepath=tmp_path)
 
         test_tree = ET.parse(TRANSITION_SVG_PATH)
+        test_root = test_tree.getroot()
+
+        reference_tree = ET.parse(tmp_path)
+        reference_root = reference_tree.getroot()
+
+        self.assertTrue(_svg_equal(test_root, reference_root))
+
+    def test_media_reference_handling(self):
+        self.maxDiff = None
+        tmp_path = tempfile.mkstemp(suffix=".svg", text=True)[1]
+        timeline = otio.core.deserialize_json_from_file(
+            MEDIA_REF_HANDLING_OTIO_PATH
+        )
+        otio.adapters.write_to_file(input_otio=timeline, filepath=tmp_path)
+
+        test_tree = ET.parse(MEDIA_REF_HANDLING_SVG_PATH)
         test_root = test_tree.getroot()
 
         reference_tree = ET.parse(tmp_path)

@@ -12,6 +12,7 @@ import random
 
 import opentimelineio as otio
 
+from otio_svg_adapter.media_ref_handlers import draw_media_reference_info
 from otio_svg_adapter.primitives import (
     COLORS,
     Color,
@@ -527,33 +528,15 @@ def _draw_clip(clip, svg_writer, extra_data=()):
         if start_pt.x < media_origin.x:
             continue
         end_pt = Point(start_pt.x, start_pt.y + time_marker_height)
-        svg_writer.draw_line(start_point=start_pt, end_point=end_pt,
-                             stroke_width=1.0, stroke_color=COLORS['black']
-                             )
-    # Draw media_reference info
-    if clip.available_range() is None:
-        available_range_text = r'available_range: {}'.format('None')
-    else:
-        available_range_text = r'available_range: {}, {}'.format(
-            repr(float(round(clip.available_range().start_time.value, 1))),
-            repr(float(round(clip.available_range().duration.value, 1))))
-    available_range_location = Point(media_origin.x + svg_writer.font_size,
-                                     media_origin.y - svg_writer.font_size)
-    svg_writer.draw_text(available_range_text, available_range_location,
-                         svg_writer.font_size,
-                         )
-    if hasattr(clip.media_reference, 'target_url'):
-        if clip.media_reference.target_url is None:
-            target_url_text = r'target_url: {}'.format('Media Unavailable')
-        else:
-            target_url_text = fr'target_url: {clip.media_reference.target_url}'
-        target_url_location = Point(
-            media_origin.x + svg_writer.font_size,
-            media_origin.y - 2.0 * svg_writer.font_size
+        svg_writer.draw_line(
+            start_point=start_pt,
+            end_point=end_pt,
+            stroke_width=1.0,
+            stroke_color=COLORS["black"],
         )
-        svg_writer.draw_text(
-            target_url_text, target_url_location, svg_writer.font_size
-        )
+    # Draw media_reference info using the appropriate handler
+    draw_media_reference_info(clip=clip, svg_writer=svg_writer, origin=media_origin)
+
     # Draw arrow from clip to media reference
     clip_media_height_difference = (((clip_count - 1) * 2.0 + 1) *
                                     svg_writer.clip_rect_height)
