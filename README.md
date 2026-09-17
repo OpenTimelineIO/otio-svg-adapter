@@ -38,6 +38,46 @@ Please see the [LICENSE](LICENSE) for details.
 Nothing in the license file or this project grants any right to use Pixar or 
 any other contributor’s trade names, trademarks, service marks, or product names.
 
+# Build instructions
+
+We use uv for development and testing. See the uv [installation instructions](https://docs.astral.sh/uv/#installation)
+if you don't already have it installed.
+
+Getting started is simple:
+
+```bash
+# install the project's dependencies and create/update the virtual environment
+uv sync
+```
+
+To verify the adapter is working, run a conversion:
+
+```bash
+uv run otioconvert -i sample.otio -o sample.svg
+```
+
+If this succeeds, `otioconvert` will use the adapter from your local checkout.
+
+### Troubleshooting tips
+
+If uv is selecting an incompatible Python version, you can pin the project to a supported version:
+
+```bash
+# pin the Python interpreter version for the current project
+uv python pin 3.12
+```
+
+```bash
+# install the project's dependencies and create/update the virtual environment
+uv sync
+```
+
+```bash
+# run otioconvert 
+uv run otioconvert -i sample.otio -o sample.svg
+```
+
+The `.python-version` file records the Python version for the project, while `uv.lock` records the resolved dependency versions. Keeping these files in the repository helps provide a consistent development environment across machines.
 
 # Contributions
 
