@@ -115,8 +115,8 @@ class Rect:
     width = 0.0
     height = 0.0
 
-    def __init__(self, origin=Point(0, 0), width=0.0, height=0.0):
-        self.origin = origin
+    def __init__(self, origin=None, width=0.0, height=0.0):
+        self.origin = origin if origin is not None else Point(0, 0)
         self.width = width
         self.height = height
 
