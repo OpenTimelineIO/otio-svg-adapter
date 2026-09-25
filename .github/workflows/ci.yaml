@@ -56,7 +56,7 @@ jobs:
           else
             pip install OpenTimelineIO>=${{ matrix.otio-version }} --only-binary :all:
           fi
-          pip install flake8 pytest pytest-cov
+          pip install ruff pytest pytest-cov
         shell: bash
 
       # Python 3.8+ no longer searches PATH for a C-extensions dependent DLLs,
@@ -80,9 +80,9 @@ jobs:
           pip install -e .
         shell: bash
 
-      - name: Lint with flake8
+      - name: Run Ruff
         run: |
-          flake8 --show-source --statistics
+          ruff check --output-format=github .
         shell: bash
 
       - name: Test with pytest
